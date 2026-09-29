@@ -25,7 +25,7 @@ A web service cannot universally live-track a phone after it has been completely
 
 ## Development progress
 
-**Phase 1 — Foundation: 65%**
+**Phase 1 — Foundation: 75%**
 
 - [x] Repository verified and initialized
 - [x] Product safety/consent model defined
@@ -33,7 +33,7 @@ A web service cannot universally live-track a phone after it has been completely
 - [x] Web application scaffold
 - [x] Supabase authentication foundation
 - [x] Subscription data model foundation
-- [x] Device management UI (enrollment flow pending device app)
+- [x] Device enrollment flow and protected device detail page
 - [x] Location dashboard UI
 - [ ] Lost mode and reconnect alerts
 - [ ] Production deployment
