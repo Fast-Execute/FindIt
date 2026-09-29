@@ -25,16 +25,16 @@ A web service cannot universally live-track a phone after it has been completely
 
 ## Development progress
 
-**Phase 1 — Foundation: 20%**
+**Phase 1 — Foundation: 50%**
 
 - [x] Repository verified and initialized
 - [x] Product safety/consent model defined
 - [x] Core location states defined
-- [ ] Web application scaffold
+- [x] Web application scaffold
 - [ ] Authentication
 - [ ] Subscription checkout
-- [ ] Device enrollment
-- [ ] Location dashboard
+- [x] Device management UI (enrollment flow pending backend)
+- [x] Location dashboard UI
 - [ ] Lost mode and reconnect alerts
 - [ ] Production deployment
 
