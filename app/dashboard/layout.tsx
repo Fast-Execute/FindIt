@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SignOutButton from "./sign-out-button";
 
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: "⌂" },
@@ -23,7 +24,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-[var(--line)] p-4 text-xs leading-5 text-[var(--muted)]">Only devices you own or are authorized to manage can be enrolled.</div>
+        <div className="absolute bottom-5 left-5 right-5 space-y-3"><div className="rounded-2xl border border-[var(--line)] p-4 text-xs leading-5 text-[var(--muted)]">Only devices you own or are authorized to manage can be enrolled.</div><SignOutButton /></div>
       </aside>
       <div className="md:pl-64">
         <header className="sticky top-0 z-10 border-b border-[var(--line)] bg-[var(--background)]/90 px-5 py-4 backdrop-blur md:px-8">
