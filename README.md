@@ -25,15 +25,15 @@ A web service cannot universally live-track a phone after it has been completely
 
 ## Development progress
 
-**Phase 1 — Foundation: 50%**
+**Phase 1 — Foundation: 65%**
 
 - [x] Repository verified and initialized
 - [x] Product safety/consent model defined
 - [x] Core location states defined
 - [x] Web application scaffold
-- [ ] Authentication
-- [ ] Subscription checkout
-- [x] Device management UI (enrollment flow pending backend)
+- [x] Supabase authentication foundation
+- [x] Subscription data model foundation
+- [x] Device management UI (enrollment flow pending device app)
 - [x] Location dashboard UI
 - [ ] Lost mode and reconnect alerts
 - [ ] Production deployment
@@ -41,3 +41,17 @@ A web service cannot universally live-track a phone after it has been completely
 ## Local development
 
 The application scaffold will be added in the next implementation step.
+
+
+## Supabase setup
+
+The project now includes cookie-based Supabase Auth, protected dashboard routing, and the initial Postgres schema for devices, location events, and subscriptions.
+
+Set these variables locally in `.env.local`:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+The database migration is in `supabase/migrations/0001_initial.sql`.
+
+Real device location collection will be implemented through an explicitly authorized companion/device component. The website itself is the recovery dashboard and account layer.
