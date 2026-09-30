@@ -15,6 +15,7 @@ export default function EnrollDevicePage() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deviceId, setDeviceId] = useState("");
+  const [deviceToken, setDeviceToken] = useState("");
   const [error, setError] = useState("");
 
   async function createEnrollment(event: FormEvent<HTMLFormElement>) {
@@ -53,7 +54,21 @@ export default function EnrollDevicePage() {
       return;
     }
 
+    const credentialResponse = await fetch("/api/device/credential", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: id }),
+    });
+
+    const credential = await credentialResponse.json();
+    if (!credentialResponse.ok) {
+      setError(credential.error ?? "Device was created, but its secure credential could not be issued.");
+      setLoading(false);
+      return;
+    }
+
     setDeviceId(id);
+    setDeviceToken(credential.token);
     setStep(3);
     setLoading(false);
   }
@@ -106,7 +121,7 @@ export default function EnrollDevicePage() {
           <p className="mt-6 text-sm font-bold uppercase tracking-[.2em] text-[var(--accent)]">Enrollment created</p>
           <h2 className="mt-2 text-3xl font-black">Your device is ready to connect.</h2>
           <p className="mt-3 leading-7 text-[var(--muted)]">The account now has an authorized device record. The next stage will connect the device component and begin sending permitted status/location events.</p>
-          <div className="mt-6 rounded-2xl border border-[var(--line)] bg-black/10 p-5"><div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Device ID</div><div className="mt-2 break-all font-mono text-sm">{deviceId}</div></div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2"><div className="rounded-2xl border border-[var(--line)] bg-black/10 p-5"><div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Device ID</div><div className="mt-2 break-all font-mono text-sm">{deviceId}</div></div><div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5"><div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Device credential</div><div className="mt-2 break-all font-mono text-sm">{deviceToken}</div><div className="mt-2 text-xs leading-5 text-[var(--muted)]">Shown once. Store it securely in the authorized companion.</div></div></div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row"><button onClick={()=>router.push(`/dashboard/devices/${deviceId}`)} className="rounded-2xl bg-white px-5 py-3 font-black text-black">Open device</button><button onClick={()=>router.push("/dashboard/devices")} className="rounded-2xl border border-[var(--line)] px-5 py-3 font-bold">Back to devices</button></div>
         </section>
       )}
