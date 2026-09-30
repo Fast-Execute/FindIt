@@ -1,9 +1,9 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 type LocationPayload = {
   device_id?: unknown;
-  enrollment_code?: unknown;
   latitude?: unknown;
   longitude?: unknown;
   accuracy_m?: unknown;
@@ -42,14 +42,13 @@ export async function POST(request: Request) {
   }
 
   const deviceId = typeof body.device_id === "string" ? body.device_id : "";
-  const enrollmentCode = typeof body.enrollment_code === "string" ? body.enrollment_code : "";
   const latitude = numberOrNull(body.latitude);
   const longitude = numberOrNull(body.longitude);
   const accuracy = numberOrNull(body.accuracy_m);
   const battery = numberOrNull(body.battery_pct);
 
-  if (!deviceId || !enrollmentCode || latitude === null || longitude === null) {
-    return NextResponse.json({ error: "device_id, enrollment_code, latitude, and longitude are required." }, { status: 400 });
+  if (!deviceId || latitude === null || longitude === null) {
+    return NextResponse.json({ error: "device_id, latitude, and longitude are required." }, { status: 400 });
   }
 
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
@@ -69,12 +68,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid recorded_at timestamp." }, { status: 400 });
   }
 
-  // The shared ingestion token is a temporary server-side gate for this foundation.
-  // It is not a per-device credential and must be replaced by device tokens before production.
-  const expectedToken = process.env.FINDIT_DEVICE_INGESTION_TOKEN;
-  if (!expectedToken || token !== expectedToken) {
-    return NextResponse.json({ error: "Invalid device authorization." }, { status: 401 });
-  }
+  const tokenHash = createHash("sha256").update(token).digest("hex");
 
   const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -82,7 +76,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.rpc("ingest_device_location", {
     p_device_id: deviceId,
-    p_enrollment_code: enrollmentCode,
+    p_token_hash: tokenHash,
     p_latitude: latitude,
     p_longitude: longitude,
     p_accuracy_m: accuracy,
