@@ -69,9 +69,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid recorded_at timestamp." }, { status: 400 });
   }
 
-  // The bearer credential is intentionally opaque here. Production device tokens
-  // should be minted, hashed, rotated, and revoked by the enrollment service.
-  // Until then, do not accept the enrollment code as an Authorization header.
+  // The shared ingestion token is a temporary server-side gate for this foundation.
+  // It is not a per-device credential and must be replaced by device tokens before production.
   const expectedToken = process.env.FINDIT_DEVICE_INGESTION_TOKEN;
   if (!expectedToken || token !== expectedToken) {
     return NextResponse.json({ error: "Invalid device authorization." }, { status: 401 });
