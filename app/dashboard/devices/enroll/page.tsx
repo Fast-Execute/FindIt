@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -8,7 +8,6 @@ type Step = 1 | 2 | 3;
 
 export default function EnrollDevicePage() {
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("My Phone");
   const [model, setModel] = useState("");
@@ -28,6 +27,7 @@ export default function EnrollDevicePage() {
     setLoading(true);
     setError("");
 
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push("/login?next=/dashboard/devices/enroll");
