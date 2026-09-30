@@ -35,6 +35,8 @@ A web service cannot universally live-track a phone after it has been completely
 - [x] Subscription data model foundation
 - [x] Device enrollment flow and protected device detail page
 - [x] Location dashboard UI
+- [x] Secure device location ingestion foundation
+- [ ] Device token lifecycle and native companion
 - [ ] Lost mode and reconnect alerts
 - [ ] Production deployment
 
@@ -52,6 +54,6 @@ Set these variables locally in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-The database migration is in `supabase/migrations/0001_initial.sql`.
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`.
 
-Real device location collection will be implemented through an explicitly authorized companion/device component. The website itself is the recovery dashboard and account layer.
+Real device location collection is implemented as a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer. Production device credentials should be minted and rotated by the enrollment service before native companion rollout.
