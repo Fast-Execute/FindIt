@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatDateTime, type DeviceAlert, type PlanStatus } from "@/lib/plans";
+import RecoveryControls from "./recovery-controls";
 
 export default async function DevicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,12 +13,24 @@ export default async function DevicePage({ params }: { params: Promise<{ id: str
 
   const { data: device, error } = await supabase
     .from("devices")
-    .select("id,name,model,platform,status,battery_pct,last_seen_at,last_latitude,last_longitude,last_location_accuracy_m,enrollment_code,created_at")
+    .select("id,name,model,platform,status,battery_pct,last_seen_at,last_latitude,last_longitude,last_location_accuracy_m,enrollment_code,created_at,lost_mode,lost_mode_message,lost_mode_contact,notify_on_reconnect")
     .eq("id", id)
     .eq("owner_id", user.id)
     .single();
 
   if (error || !device) notFound();
+
+  const [{ data: planRows }, { data: alertRows }] = await Promise.all([
+    supabase.rpc("my_plan_status"),
+    supabase
+      .from("device_alerts")
+      .select("id,device_id,kind,message,created_at,read_at")
+      .eq("device_id", id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+  ]);
+  const plan = ((planRows as PlanStatus[] | null) ?? [])[0];
+  const alerts = (alertRows as DeviceAlert[] | null) ?? [];
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -57,15 +71,33 @@ export default async function DevicePage({ params }: { params: Promise<{ id: str
               <div className="mt-2 font-mono text-lg font-black tracking-[.15em]">{device.enrollment_code ?? "Pending"}</div>
             </div>
           </article>
-          <article className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
-            <h2 className="text-xl font-black">Recovery controls</h2>
-            <div className="mt-4 grid gap-3">
-              <button className="rounded-2xl border border-[var(--line)] px-4 py-3 text-left text-sm font-bold">Enable Lost Mode</button>
-              <button className="rounded-2xl border border-[var(--line)] px-4 py-3 text-left text-sm font-bold">Alert me when online</button>
-            </div>
-            <p className="mt-4 text-xs leading-5 text-[var(--muted)]">Controls remain inactive until the device component is connected and authorized.</p>
-          </article>
+          <RecoveryControls
+            deviceId={device.id}
+            lostMode={device.lost_mode}
+            lostMessage={device.lost_mode_message}
+            lostContact={device.lost_mode_contact}
+            notifyOnReconnect={device.notify_on_reconnect}
+            canLostMode={plan?.lost_mode ?? false}
+            canReconnectAlerts={plan?.reconnect_alerts ?? false}
+          />
         </aside>
+      </section>
+
+      <section className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
+        <h2 className="text-xl font-black">Activity</h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">Alerts and Lost Mode changes for this device.</p>
+        {alerts.length > 0 ? (
+          <div className="mt-4 divide-y divide-[var(--line)]">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm font-semibold">{alert.message ?? alert.kind}</span>
+                <span className="text-xs text-[var(--muted)]">{formatDateTime(alert.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--muted)]">No activity yet.</p>
+        )}
       </section>
 
       <section className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">

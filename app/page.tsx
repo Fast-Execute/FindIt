@@ -8,15 +8,15 @@ const plans = [
   {
     name: "Plus",
     price: "$9.99",
-    description: "For people who want more recovery history.",
-    features: ["Up to 3 devices", "Location history", "Lost Mode", "Priority alerts"],
+    description: "For people with more than one device to protect.",
+    features: ["Up to 3 devices", "Lost Mode", "Reconnect alerts", "Everything in Basic"],
     featured: true,
   },
   {
     name: "Family",
     price: "$14.99",
     description: "For managing authorized family devices.",
-    features: ["Up to 10 devices", "Shared management", "Extended history", "Recovery alerts"],
+    features: ["Up to 10 devices", "Lost Mode", "Shared management", "Recovery alerts"],
   },
 ];
 
