@@ -50,9 +50,10 @@ export async function POST(request: Request) {
   }
 
   const token = randomBytes(32).toString("base64url");
-  const { error } = await admin.from("device_credentials").insert({
-    device_id: deviceId,
-    token_hash: hashToken(token),
+  const { error } = await admin.rpc("rotate_device_credential", {
+    p_device_id: deviceId,
+    p_owner_id: user.id,
+    p_token_hash: hashToken(token),
   });
 
   if (error) {

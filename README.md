@@ -54,6 +54,8 @@ Set these variables locally in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`.
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, and `0004_device_credentials.sql`.
+
+Device credentials are random tokens stored only as SHA-256 hashes in `device_credentials`. Each device has at most one active credential; issuing a new one through `POST /api/device/credential` revokes the previous one. Location ingestion (`POST /api/device/location`) authenticates with `Authorization: Bearer <token>` and requires `SUPABASE_SERVICE_ROLE_KEY` on the server.
 
 Real device location collection is implemented as a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer. Production device credentials should be minted and rotated by the enrollment service before native companion rollout.
