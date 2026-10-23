@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/validation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "confirmation_failed") {
+      setMessage("That confirmation link is invalid or has expired. Sign in, or sign up again to get a new link.");
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,7 +28,8 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    window.location.href = "/dashboard";
+    const next = new URLSearchParams(window.location.search).get("next");
+    window.location.href = safeRedirectPath(next);
   }
 
   return (

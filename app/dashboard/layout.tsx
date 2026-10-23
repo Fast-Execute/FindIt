@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
         <div className="mt-8 rounded-2xl border border-[var(--line)] bg-white/[.02] p-4">
           <div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Account</div>
           <div className="mt-2 font-semibold">Personal recovery</div>
-          <div className="mt-1 text-xs text-[var(--muted)]">Subscription active</div>
+          <div className="mt-1 text-xs text-[var(--muted)]">Manage your enrolled devices</div>
         </div>
         <nav className="mt-6 space-y-1">
           {navigation.map((item) => (
