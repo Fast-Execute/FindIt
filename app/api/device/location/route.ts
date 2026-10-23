@@ -88,5 +88,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Device enrollment could not be verified." }, { status: 401 });
   }
 
-  return NextResponse.json({ ok: true, event_id: data?.id ?? null });
+  return NextResponse.json({
+    ok: true,
+    event_id: data?.event_id ?? null,
+    lost_mode: data?.lost_mode ?? false,
+    lost_message: data?.lost_message ?? null,
+    lost_contact: data?.lost_contact ?? null,
+    report_interval_s: data?.report_interval_s ?? 900,
+  });
 }

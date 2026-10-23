@@ -1,5 +1,7 @@
 import Link from "next/link";
 import SignOutButton from "./sign-out-button";
+import { createClient } from "@/lib/supabase/server";
+import { planLabel, type PlanStatus } from "@/lib/plans";
 
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: "⌂" },
@@ -7,7 +9,11 @@ const navigation = [
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ];
 
-export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const supabase = await createClient();
+  const { data: planRows } = await supabase.rpc("my_plan_status");
+  const plan = ((planRows as PlanStatus[] | null) ?? [])[0];
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[var(--panel)]/95 p-5 md:block">
@@ -15,7 +21,7 @@ export default function DashboardLayout({ children }: Readonly<{ children: React
         <div className="mt-8 rounded-2xl border border-[var(--line)] bg-white/[.02] p-4">
           <div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Account</div>
           <div className="mt-2 font-semibold">Personal recovery</div>
-          <div className="mt-1 text-xs text-[var(--muted)]">Subscription active</div>
+          <div className="mt-1 text-xs text-[var(--muted)]">{plan ? `${planLabel(plan.plan)} plan` : "Plan unavailable"}</div>
         </div>
         <nav className="mt-6 space-y-1">
           {navigation.map((item) => (
