@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate, timeAgo } from "@/lib/devices";
+import StatusBadge from "../../status-badge";
 
 export default async function DevicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,13 +30,13 @@ export default async function DevicePage({ params }: { params: Promise<{ id: str
             <h1 className="mt-3 text-4xl font-black tracking-tight">{device.name}</h1>
             <p className="mt-2 text-[var(--muted)]">{device.model}</p>
           </div>
-          <span className="w-fit rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-2 text-xs font-black text-yellow-300">{device.status}</span>
+          <StatusBadge status={device.status} />
         </div>
       </section>
 
       <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Battery" value={device.battery_pct == null ? "—" : device.battery_pct + "%"} />
-        <Metric label="Last seen" value={formatDate(device.last_seen_at)} />
+        <Metric label="Last seen" value={device.last_seen_at ? `${formatDate(device.last_seen_at)} (${timeAgo(device.last_seen_at)})` : "Not reported"} />
         <Metric label="Latitude" value={device.last_latitude == null ? "—" : String(device.last_latitude)} />
         <Metric label="Longitude" value={device.last_longitude == null ? "—" : String(device.last_longitude)} />
       </section>
@@ -87,7 +89,3 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-[var(--line)] bg-black/10 p-4"><div className="text-xs text-[var(--muted)]">{label}</div><div className="mt-1 break-all text-sm font-bold">{value}</div></div>;
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "Not reported";
-  return new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-}

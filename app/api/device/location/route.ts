@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isUuid } from "@/lib/validation";
 
 type LocationPayload = {
   device_id?: unknown;
@@ -11,71 +12,65 @@ type LocationPayload = {
   recorded_at?: unknown;
 };
 
+const MAX_BODY_BYTES = 4096;
+
 function numberOrNull(value: unknown) {
   if (value === undefined || value === null || value === "") return null;
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-export async function POST(request: Request) {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+function bad(error: string, status = 400) {
+  return NextResponse.json({ error }, { status, headers: { "Cache-Control": "no-store" } });
+}
 
-  if (!serviceKey || !supabaseUrl) {
-    return NextResponse.json({ error: "Device ingestion is not configured." }, { status: 503 });
-  }
+export async function POST(request: Request) {
+  const admin = createAdminClient();
+  if (!admin) return bad("Device ingestion is not configured.", 503);
 
   const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json({ error: "Missing device authorization." }, { status: 401 });
-  }
+  if (!authHeader?.startsWith("Bearer ")) return bad("Missing device authorization.", 401);
 
   const token = authHeader.slice("Bearer ".length).trim();
-  if (!token) {
-    return NextResponse.json({ error: "Missing device authorization." }, { status: 401 });
-  }
+  if (!token) return bad("Missing device authorization.", 401);
+
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_BYTES) return bad("Request body too large.", 413);
 
   let body: LocationPayload;
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
+    return bad("Request body must be valid JSON.");
   }
+  if (typeof body !== "object" || body === null) return bad("Request body must be a JSON object.");
 
-  const deviceId = typeof body.device_id === "string" ? body.device_id : "";
+  if (!isUuid(body.device_id)) return bad("A valid device_id is required.");
+
   const latitude = numberOrNull(body.latitude);
   const longitude = numberOrNull(body.longitude);
   const accuracy = numberOrNull(body.accuracy_m);
   const battery = numberOrNull(body.battery_pct);
 
-  if (!deviceId || latitude === null || longitude === null) {
-    return NextResponse.json({ error: "device_id, latitude, and longitude are required." }, { status: 400 });
+  if (latitude === null || longitude === null) {
+    return bad("latitude and longitude are required numbers.");
   }
-
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    return NextResponse.json({ error: "Invalid coordinates." }, { status: 400 });
+    return bad("Invalid coordinates.");
   }
-
-  if (accuracy !== null && accuracy < 0) {
-    return NextResponse.json({ error: "Invalid accuracy." }, { status: 400 });
-  }
-
+  if (accuracy !== null && accuracy < 0) return bad("Invalid accuracy.");
   if (battery !== null && (!Number.isInteger(battery) || battery < 0 || battery > 100)) {
-    return NextResponse.json({ error: "Invalid battery percentage." }, { status: 400 });
+    return bad("Invalid battery percentage.");
   }
 
   const recordedAt = typeof body.recorded_at === "string" ? body.recorded_at : new Date().toISOString();
-  if (Number.isNaN(Date.parse(recordedAt))) {
-    return NextResponse.json({ error: "Invalid recorded_at timestamp." }, { status: 400 });
-  }
+  const recordedMs = Date.parse(recordedAt);
+  if (Number.isNaN(recordedMs)) return bad("Invalid recorded_at timestamp.");
+  if (recordedMs > Date.now() + 5 * 60 * 1000) return bad("recorded_at cannot be in the future.");
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
-  const supabase = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { data, error } = await supabase.rpc("ingest_device_location", {
-    p_device_id: deviceId,
+  const { data, error } = await admin.rpc("ingest_device_location", {
+    p_device_id: body.device_id,
     p_token_hash: tokenHash,
     p_latitude: latitude,
     p_longitude: longitude,
@@ -85,8 +80,15 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json({ error: "Device enrollment could not be verified." }, { status: 401 });
+    // Error codes are set in supabase/migrations/0004_device_credentials.sql.
+    if (error.code === "28000") return bad("Device credential could not be verified.", 401);
+    if (error.code === "22023") return bad("Invalid location payload.");
+    console.error("ingest_device_location failed", { code: error.code, message: error.message });
+    return bad("Could not record location.", 500);
   }
 
-  return NextResponse.json({ ok: true, event_id: data?.id ?? null });
+  return NextResponse.json(
+    { ok: true, event_id: data?.id ?? null },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

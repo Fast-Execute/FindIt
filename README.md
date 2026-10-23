@@ -36,24 +36,61 @@ A web service cannot universally live-track a phone after it has been completely
 - [x] Device enrollment flow and protected device detail page
 - [x] Location dashboard UI
 - [x] Secure device location ingestion foundation
-- [ ] Device token lifecycle and native companion
+- [x] Device credential issuing, rotation and hashed-token ingestion
+- [ ] Native companion app
 - [ ] Lost mode and reconnect alerts
 - [ ] Production deployment
 
 ## Local development
 
-The application scaffold will be added in the next implementation step.
+Requirements: Node.js 22+ and a [Supabase](https://supabase.com) project.
 
+```bash
+npm install
+cp .env.example .env.local   # then fill in the values (see below)
+npm run dev                  # http://localhost:3000
+```
 
-## Supabase setup
+Other scripts: `npm run lint`, `npx tsc --noEmit`, `npm run build`. CI runs all three on every push and pull request to `main`.
 
-The project now includes cookie-based Supabase Auth, protected dashboard routing, and the initial Postgres schema for devices, location events, and subscriptions.
+### Environment variables
 
-Set these variables locally in `.env.local`:
+| Variable | Where it is used | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | browser + server | Publishable (anon) key |
+| `SUPABASE_SERVICE_ROLE_KEY` | server only | Required by `/api/device/credential` and `/api/device/location`. Bypasses RLS: never expose it to the browser |
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+## Database
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`.
+Apply the migrations in `supabase/migrations/` in order (Supabase CLI: `supabase db push`, or paste each file into the SQL editor):
 
-Real device location collection is implemented as a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer. Production device credentials should be minted and rotated by the enrollment service before native companion rollout.
+| Migration | Purpose |
+| --- | --- |
+| `0001_initial.sql` | `devices`, `location_events`, `subscriptions`, owner-only RLS |
+| `0002_device_enrollment.sql` | Enrollment code on devices |
+| `0003_secure_device_ingestion.sql` | First ingestion function (superseded by 0004) |
+| `0004_device_credentials.sql` | `device_credentials` (hashed tokens), token-based `ingest_device_location`, `mark_stale_devices_offline`, tighter RLS and column grants |
+
+Devices only ever show `ONLINE` when ingestion has just recorded an event. To flip silent devices to `OFFLINE`, schedule `select public.mark_stale_devices_offline();` (for example with `pg_cron` every 5 minutes).
+
+## Device API
+
+Real device location collection is a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer.
+
+**`POST /api/device/credential`** (signed-in owner session) with `{ "device_id": "<uuid>" }` returns a bearer token **once**. Only its SHA-256 hash is stored. Calling it again rotates the credential and revokes the previous one.
+
+**`POST /api/device/location`** with `Authorization: Bearer <token>` and a JSON body:
+
+```json
+{
+  "device_id": "<uuid>",
+  "latitude": -25.7479,
+  "longitude": 28.2293,
+  "accuracy_m": 12,
+  "battery_pct": 80,
+  "recorded_at": "2026-10-23T07:20:00Z"
+}
+```
+
+`accuracy_m`, `battery_pct` and `recorded_at` are optional. Responses: `200` recorded, `400` invalid payload, `401` missing/invalid/revoked credential, `413` body too large, `503` service not configured. Events older than the device's current last-seen time are stored in history but do not overwrite its last known state.
