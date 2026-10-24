@@ -41,7 +41,8 @@ A web service cannot universally live-track a phone after it has been completely
 - [x] Plan limits enforced in the database (device count, Lost Mode, reconnect alerts)
 - [ ] Native companion
 - [x] PayFast subscription billing (checkout, signed webhook, cancel, billing page)
-- [ ] Email/push delivery of alerts
+- [x] Email delivery of alerts, receipts and payment problems
+- [ ] Push notifications
 - [ ] Production deployment
 
 ## Local development
@@ -58,7 +59,7 @@ Set these variables locally in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, `0005_lost_mode_alerts_and_plans.sql`, and `0006_payfast_billing.sql`.
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, `0005_lost_mode_alerts_and_plans.sql`, `0006_payfast_billing.sql`, and `0007_email_notifications.sql`.
 
 Device credentials are random tokens stored only as SHA-256 hashes in `device_credentials`. Each device has at most one active credential; issuing a new one through `POST /api/device/credential` revokes the previous one. Location ingestion (`POST /api/device/location`) authenticates with `Authorization: Bearer <token>` and requires `SUPABASE_SERVICE_ROLE_KEY` on the server.
 
@@ -101,3 +102,25 @@ Set up:
 4. For local sandbox testing without a public URL, `PAYFAST_SKIP_IP_CHECK=true` skips only the source-IP check, and only in sandbox mode. Signature and PayFast confirmation still run.
 
 Run the unit tests with `node --test lib/payfast.test.mjs` (Node 22.18 or newer).
+
+
+## Email
+
+Alerts and billing events are written to an `email_outbox` table by database triggers, in the same transaction as the event, so an alert cannot be lost and a rolled-back payment never sends a receipt. `lib/email.ts` renders and sends them through [Resend](https://resend.com); swapping provider means replacing `buildSendRequest` and `classifyStatus` in that one file.
+
+| Email | Sent when | Can be turned off |
+| --- | --- | --- |
+| Device back online | A device reconnects and "alert me" or Lost Mode is on | Yes (Settings) |
+| Device went offline | A Lost Mode device stops reporting | Yes |
+| Lost Mode on / off | The owner changes it (doubles as a security notice) | Yes |
+| Payment received, payment failed, subscription cancelled | PayFast notifies us | No |
+
+Reconnect emails are sent right after the device's request returns. Everything else (and any retries) is sent by `/api/cron/send-emails`, so schedule it every few minutes with `Authorization: Bearer $CRON_SECRET`, along with `/api/cron/mark-offline`. Vercel's Hobby plan only allows daily cron, so use Pro or an external scheduler such as cron-job.org for these.
+
+Set up:
+
+1. Create a Resend account and verify your sending domain (add the DNS records it gives you).
+2. Set `RESEND_API_KEY` and `EMAIL_FROM` (a sender on that verified domain).
+3. If email was misconfigured for a while, rows stop retrying after 5 attempts. After fixing it, requeue them with `update email_outbox set attempts = 0 where sent_at is null;`.
+
+Until both variables are set nothing is sent and nothing is lost: mail stays queued.

@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { planLabel, type PlanStatus } from "@/lib/plans";
+import EmailAlertsToggle from "./email-alerts-toggle";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: planRows } = await supabase.rpc("my_plan_status");
+  const { data: notificationRow } = await supabase.from("notification_settings").select("email_alerts").maybeSingle();
+  const emailAlerts = notificationRow?.email_alerts ?? true;
   const plan = ((planRows as PlanStatus[] | null) ?? [])[0];
   const name = typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "Not set";
 
@@ -28,6 +31,11 @@ export default async function SettingsPage() {
             ["Lost Mode", plan?.lost_mode ? "Included" : "Plus plan or higher"],
           ]}
         />
+        <article className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
+          <h2 className="text-xl font-black">Notifications</h2>
+          <div className="mt-5"><EmailAlertsToggle initial={emailAlerts} /></div>
+          <p className="mt-4 text-xs text-[var(--muted)]">Sent to {user?.email ?? "your account email"}.</p>
+        </article>
         <SettingsCard
           title="Privacy"
           items={[

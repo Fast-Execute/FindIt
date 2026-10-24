@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { flushEmailOutbox, type OutboxAdmin } from "@/lib/email";
 
 type LocationPayload = {
   device_id?: unknown;
@@ -86,6 +87,16 @@ export async function POST(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: "Device enrollment could not be verified." }, { status: 401 });
+  }
+
+  // A reconnect alert was just queued: email it now, after the device has its response.
+  // If this fails the email stays queued and /api/cron/send-emails picks it up.
+  if (data?.alert_queued) {
+    after(async () => {
+      try {
+        await flushEmailOutbox(supabase as unknown as OutboxAdmin);
+      } catch {}
+    });
   }
 
   return NextResponse.json({
