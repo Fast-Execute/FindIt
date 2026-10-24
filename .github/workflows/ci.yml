@@ -35,7 +35,7 @@ jobs:
         run: npm install
 
       - name: Unit tests
-        run: node --test lib/payfast.test.mjs
+        run: node --test lib/payfast.test.mjs lib/email.test.mjs
 
       - name: Type-check
         run: npx tsc --noEmit

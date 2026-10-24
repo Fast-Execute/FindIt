@@ -1,34 +1,22 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isAuthorizedCron } from "@/lib/cron";
+import { flushEmailOutbox, type OutboxAdmin } from "@/lib/email";
 
-function secretsMatch(provided: string, expected: string) {
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
-// Marks devices that have stopped reporting as OFFLINE.
-// Schedule this every few minutes (e.g. Vercel Cron, which sends
-// `Authorization: Bearer $CRON_SECRET`).
+// Marks devices that have stopped reporting as OFFLINE (and queues an alert for devices
+// in Lost Mode). Schedule this every few minutes with `Authorization: Bearer $CRON_SECRET`.
 async function handle(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!cronSecret || !serviceKey || !supabaseUrl) {
+  if (!process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Cron endpoint is not configured." }, { status: 503 });
   }
-
-  const authHeader = request.headers.get("authorization") ?? "";
-  const provided = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length).trim() : "";
-  if (!provided || !secretsMatch(provided, cronSecret)) {
+  if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const admin = createClient(supabaseUrl, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json({ error: "Cron endpoint is not configured." }, { status: 503 });
+  }
 
   const { data, error } = await admin.rpc("mark_stale_devices_offline", {
     p_stale_after: "30 minutes",
@@ -38,7 +26,16 @@ async function handle(request: Request) {
     return NextResponse.json({ error: "Could not update device states." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, marked_offline: data ?? 0 });
+  // Send the offline alerts we just queued. A failure here must not fail the sweep:
+  // unsent emails stay queued for /api/cron/send-emails.
+  let emails: unknown = null;
+  try {
+    emails = await flushEmailOutbox(admin as unknown as OutboxAdmin);
+  } catch {
+    emails = { error: "email delivery failed; will retry" };
+  }
+
+  return NextResponse.json({ ok: true, marked_offline: data ?? 0, emails });
 }
 
 export const GET = handle;
