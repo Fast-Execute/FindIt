@@ -40,7 +40,7 @@ A web service cannot universally live-track a phone after it has been completely
 - [x] Lost mode and in-app reconnect alerts
 - [x] Plan limits enforced in the database (device count, Lost Mode, reconnect alerts)
 - [ ] Native companion
-- [ ] Billing provider checkout and webhooks
+- [x] PayFast subscription billing (checkout, signed webhook, cancel, billing page)
 - [ ] Email/push delivery of alerts
 - [ ] Production deployment
 
@@ -58,7 +58,7 @@ Set these variables locally in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, and `0005_lost_mode_alerts_and_plans.sql`.
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, `0005_lost_mode_alerts_and_plans.sql`, and `0006_payfast_billing.sql`.
 
 Device credentials are random tokens stored only as SHA-256 hashes in `device_credentials`. Each device has at most one active credential; issuing a new one through `POST /api/device/credential` revokes the previous one. Location ingestion (`POST /api/device/location`) authenticates with `Authorization: Bearer <token>` and requires `SUPABASE_SERVICE_ROLE_KEY` on the server.
 
@@ -76,7 +76,7 @@ What each plan includes is defined once, in `public.plan_limits` (migration 0005
 | Plus | 3 | Yes | Yes |
 | Family | 10 | Yes | Yes |
 
-Users cannot write their own `subscriptions` row, flip Lost Mode directly, or forge device state; those changes only happen through the `set_lost_mode`, `set_reconnect_alerts` and ingestion functions. Location ingestion is never plan-gated, so a lapsed subscription cannot cut off recovery of a device that is already enrolled. A billing provider must write `subscriptions` with the service role; that integration is not built yet.
+Users cannot write their own `subscriptions` row, flip Lost Mode directly, or forge device state; those changes only happen through the `set_lost_mode`, `set_reconnect_alerts` and ingestion functions. Location ingestion is never plan-gated, so a lapsed subscription cannot cut off recovery of a device that is already enrolled. Only the PayFast webhook (service role) can activate a plan; see Billing below.
 
 ## Scheduled job
 
@@ -85,3 +85,19 @@ Schedule a request to `/api/cron/mark-offline` every few minutes with `Authoriza
 ## Companion API
 
 `POST /api/device/location` with `Authorization: Bearer <device token>` returns `lost_mode`, `lost_message`, `lost_contact` and `report_interval_s` (60 while Lost Mode is on, otherwise 900) so the authorized companion can show the owner's message and adjust its reporting rate.
+
+
+## Billing (PayFast)
+
+Prices live in one place, `lib/pricing.ts` (rand, monthly): the landing page, billing page and the charge itself all read it, and the client never sends an amount.
+
+Flow: the billing page calls `POST /api/billing/checkout`, which records a `billing_checkouts` row (plan and amount decided by the server) and returns a signed PayFast form. PayFast takes the card, then calls `POST /api/billing/payfast/notify` (ITN). That route is the only way a plan becomes active and it checks, in order: the request comes from a PayFast server, the merchant id is ours, the signature is valid, and PayFast itself confirms the notification. `apply_payfast_itn` then enforces the expected amount and ignores duplicates in one transaction. Renewals arrive with the subscription token; a failed renewal marks the account `PAST_DUE` (7 days of grace), and cancelling keeps access until the paid period ends. Users cannot read provider tokens or write subscriptions.
+
+Set up:
+
+1. Create a PayFast merchant account and set a **passphrase** in the PayFast dashboard (Settings, Integration). Enable subscriptions/recurring billing for the account.
+2. Set `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY`, `PAYFAST_PASSPHRASE` and `NEXT_PUBLIC_SITE_URL` (your public https URL, since PayFast must reach `/api/billing/payfast/notify`).
+3. The app runs against the PayFast **sandbox** unless `PAYFAST_MODE=live`. Test with sandbox credentials first, including a renewal, a cancel and a failed payment, before switching to live.
+4. For local sandbox testing without a public URL, `PAYFAST_SKIP_IP_CHECK=true` skips only the source-IP check, and only in sandbox mode. Signature and PayFast confirmation still run.
+
+Run the unit tests with `node --test lib/payfast.test.mjs` (Node 22.18 or newer).

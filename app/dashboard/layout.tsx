@@ -6,6 +6,7 @@ import { planLabel, type PlanStatus } from "@/lib/plans";
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: "⌂" },
   { href: "/dashboard/devices", label: "My Devices", icon: "▣" },
+  { href: "/dashboard/billing", label: "Billing", icon: "R" },
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ];
 

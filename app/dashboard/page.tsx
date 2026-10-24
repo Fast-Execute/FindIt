@@ -112,7 +112,7 @@ export default async function DashboardPage() {
                 <div className="mt-5 h-2 rounded-full bg-white/5"><div className="h-2 rounded-full bg-[var(--accent)]" style={{ width: `${Math.min(100, (plan.device_count / plan.max_devices) * 100)}%` }} /></div>
                 <div className="mt-2 text-xs text-[var(--muted)]">{plan.device_count} of {plan.max_devices} device {plan.max_devices === 1 ? "slot" : "slots"} used</div>
                 {(!plan.lost_mode || !plan.reconnect_alerts) && (
-                  <Link href="/#pricing" className="mt-5 block rounded-2xl border border-[var(--accent)]/40 px-4 py-3 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/5">
+                  <Link href="/dashboard/billing" className="mt-5 block rounded-2xl border border-[var(--accent)]/40 px-4 py-3 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/5">
                     {plan.reconnect_alerts ? "Upgrade for Lost Mode" : "Upgrade for reconnect alerts"}
                   </Link>
                 )}
