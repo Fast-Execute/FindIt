@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { planLabel, type PlanStatus } from "@/lib/plans";
 
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
           title="Plan"
           items={[
             ["Current plan", plan ? planLabel(plan.plan) : "—"],
+            ["Manage billing", "/dashboard/billing"],
             ["Devices", plan ? `${plan.device_count} of ${plan.max_devices} used` : "—"],
             ["Reconnect alerts", plan?.reconnect_alerts ? "Included" : "Basic plan or higher"],
             ["Lost Mode", plan?.lost_mode ? "Included" : "Plus plan or higher"],
@@ -48,7 +50,11 @@ function SettingsCard({ title, items }: { title: string; items: string[][] }) {
         {items.map(([label, value]) => (
           <div key={label} className="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
             <span className="text-sm text-[var(--muted)]">{label}</span>
-            <span className="break-all text-sm font-semibold">{value}</span>
+            {value.startsWith("/") ? (
+              <Link href={value} className="text-sm font-semibold text-[var(--accent)] hover:underline">Open billing</Link>
+            ) : (
+              <span className="break-all text-sm font-semibold">{value}</span>
+            )}
           </div>
         ))}
       </div>

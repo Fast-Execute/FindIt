@@ -9,10 +9,11 @@ export type PlanStatus = {
   device_count: number;
   lost_mode: boolean;
   reconnect_alerts: boolean;
+  current_period_end: string | null;
 };
 
 export const PLAN_LABELS: Record<PlanStatus["plan"], string> = {
-  FREE: "Free trial",
+  FREE: "Free",
   BASIC: "Basic",
   PLUS: "Plus",
   FAMILY: "Family",

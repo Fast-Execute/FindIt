@@ -1,24 +1,6 @@
-const plans = [
-  {
-    name: "Basic",
-    price: "$4.99",
-    description: "For protecting one personal device.",
-    features: ["1 enrolled device", "Last-known location", "Reconnect alerts"],
-  },
-  {
-    name: "Plus",
-    price: "$9.99",
-    description: "For people with more than one device to protect.",
-    features: ["Up to 3 devices", "Lost Mode", "Reconnect alerts", "Everything in Basic"],
-    featured: true,
-  },
-  {
-    name: "Family",
-    price: "$14.99",
-    description: "For managing authorized family devices.",
-    features: ["Up to 10 devices", "Lost Mode", "Shared management", "Recovery alerts"],
-  },
-];
+import { PAID_PLANS, PLAN_CATALOG, PLAN_PRICES_ZAR, formatZar } from "@/lib/pricing";
+
+const plans = PAID_PLANS.map((key) => ({ key, ...PLAN_CATALOG[key], price: formatZar(PLAN_PRICES_ZAR[key]) }));
 
 export default function Home() {
   return (
@@ -133,11 +115,11 @@ export default function Home() {
           <div className="max-w-2xl">
             <p className="text-sm font-bold uppercase tracking-[.2em] text-[var(--accent)]">Monthly protection</p>
             <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Choose your plan.</h2>
-            <p className="mt-4 text-[var(--muted)]">Pricing shown is a design placeholder. We will connect the final billing provider before launch.</p>
+            <p className="mt-4 text-[var(--muted)]">Billed monthly in rand through PayFast. Cancel any time and keep access until the end of the month you paid for.</p>
           </div>
           <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {plans.map((plan) => (
-              <article key={plan.name} className={`rounded-3xl border p-7 ${plan.featured ? "border-[var(--accent)] bg-[var(--panel)]" : "border-[var(--line)] bg-[var(--panel)]/50"}`}>
+              <article key={plan.key} className={`rounded-3xl border p-7 ${plan.featured ? "border-[var(--accent)] bg-[var(--panel)]" : "border-[var(--line)] bg-[var(--panel)]/50"}`}>
                 {plan.featured && <div className="mb-5 text-xs font-bold uppercase tracking-[.15em] text-[var(--accent)]">Most flexible</div>}
                 <h3 className="text-2xl font-bold">{plan.name}</h3>
                 <div className="mt-5 text-4xl font-black">{plan.price}<span className="text-base font-normal text-[var(--muted)]"> / month</span></div>

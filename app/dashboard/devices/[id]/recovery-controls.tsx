@@ -137,7 +137,7 @@ export default function RecoveryControls(props: Props) {
             <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
               Faster location reporting and an on-screen message for whoever finds your device. Included with Plus and Family.
             </p>
-            <Link href="/#pricing" className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-xs font-bold text-black">See plans</Link>
+            <Link href="/dashboard/billing" className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-xs font-bold text-black">See plans</Link>
           </>
         )}
       </div>
@@ -145,7 +145,7 @@ export default function RecoveryControls(props: Props) {
       {error && (
         <div className="mt-4 rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
           {error}
-          {needsUpgrade && <Link href="/#pricing" className="ml-2 font-bold underline">See plans</Link>}
+          {needsUpgrade && <Link href="/dashboard/billing" className="ml-2 font-bold underline">See plans</Link>}
         </div>
       )}
     </article>
