@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# secrets: never commit real values (service role key, Stripe keys, n8n encryption key)
+.env
+.env.*
+!.env.example
+ops/n8n/.env
+
+# misc
+.DS_Store
+npm-debug.log*
+.vercel/

@@ -57,3 +57,20 @@ Set these variables locally in `.env.local`:
 The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`.
 
 Real device location collection is implemented as a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer. Production device credentials should be minted and rotated by the enrollment service before native companion rollout.
+
+## Billing (Stripe)
+
+Subscriptions are handled in-app with Stripe Checkout, the Stripe customer portal, and a signed webhook. Stripe is the source of truth; the webhook mirrors subscription state into `public.subscriptions`, and only the server (service role) can write that table (`0004_billing.sql` removes the old owner insert/update policies).
+
+1. In Stripe (test mode first), create one recurring Price per plan you sell.
+2. Add a webhook endpoint at `https://<your-site>/api/billing/webhook` for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`.
+3. Enable the customer portal in Stripe (Settings → Billing → Customer portal).
+4. Set the Stripe variables from `.env.example` (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*`, `NEXT_PUBLIC_SITE_URL`) plus `SUPABASE_SERVICE_ROLE_KEY`.
+5. Apply `supabase/migrations/0004_billing.sql`.
+6. Local testing: `stripe listen --forward-to localhost:3000/api/billing/webhook` prints the `whsec_...` secret to use locally.
+
+Run the billing unit tests with `npm test`.
+
+## Automation (n8n)
+
+Optional email notifications run in a self-hosted n8n instance, separate from the app. See `ops/n8n/README.md`. The app never depends on n8n for billing correctness.

@@ -1,0 +1,337 @@
+{
+  "name": "FindIt - reconnect alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "findit/location-event",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "38293d9c-4601-4c66-bcaa-7f63de8cbdae",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "8f24e391-80d2-46d9-9102-a61bce0cac80",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "FindIt webhook secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "949a295c-406f-4959-a31d-ec8874cadc5f",
+              "name": "supabaseUrl",
+              "value": "https://YOUR-PROJECT.supabase.co",
+              "type": "string"
+            },
+            {
+              "id": "b86237b8-c5dd-4db0-bcc8-eb0631338715",
+              "name": "siteUrl",
+              "value": "https://YOUR-FINDIT-SITE",
+              "type": "string"
+            },
+            {
+              "id": "4e26b328-927a-468a-8883-c9ac518ff24f",
+              "name": "fromEmail",
+              "value": "FindIt <alerts@your-domain.example>",
+              "type": "string"
+            },
+            {
+              "id": "797e3584-040a-4dd0-b7df-79bc49154fb5",
+              "name": "gapMinutes",
+              "value": 30,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "8d829cd4-9c47-4522-9697-cd6d32d6f661",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.supabaseUrl }}/rest/v1/devices",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "=eq.{{ $('Webhook').first().json.body.record.device_id }}"
+            },
+            {
+              "name": "select",
+              "value": "id,name,owner_id,lost_mode"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cb499df2-1da2-41c6-a1ef-b1dc31efad84",
+      "name": "Get device",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_ME",
+          "name": "FindIt Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "819e2689-a145-4b41-b85c-e733d3dc5e3c",
+              "leftValue": "={{ $json.lost_mode }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a8d8cd12-d649-4925-ad1c-9bae40031da1",
+      "name": "Lost Mode on?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.supabaseUrl }}/rest/v1/location_events",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "device_id",
+              "value": "=eq.{{ $('Webhook').first().json.body.record.device_id }}"
+            },
+            {
+              "name": "recorded_at",
+              "value": "=lt.{{ $('Webhook').first().json.body.record.recorded_at }}"
+            },
+            {
+              "name": "select",
+              "value": "recorded_at"
+            },
+            {
+              "name": "order",
+              "value": "recorded_at.desc"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3b42b54d-f23d-4d56-a342-6595c14bd044",
+      "name": "Get previous event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_ME",
+          "name": "FindIt Supabase"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Only alert when this event follows a long silence, so a device reporting every\n// few minutes does not email the owner on every location update.\nconst record = $('Webhook').first().json.body?.record ?? {};\nconst config = $('Config').first().json;\nconst device = $('Get device').first().json;\nconst previous = $input.first().json ?? {};\n\nconst now = Date.parse(record.recorded_at);\nconst before = Date.parse(previous.recorded_at);\nif (!Number.isFinite(now) || !Number.isFinite(before)) return []; // first ever report: nothing to compare\n\nconst gapMinutes = Math.round((now - before) / 60000);\nif (gapMinutes < Number(config.gapMinutes)) return [];\n\nconst gapText = gapMinutes >= 120\n  ? `${Math.round(gapMinutes / 60)} hours`\n  : `${gapMinutes} minutes`;\n\nreturn [{ json: { deviceId: device.id, deviceName: device.name, ownerId: device.owner_id, gapText } }];"
+      },
+      "id": "3f0b53c3-7b3d-4584-8517-80f929ea3308",
+      "name": "Check gap",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.supabaseUrl }}/auth/v1/admin/users/{{ $json.ownerId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "cd03f7e0-51b5-4650-8ea3-7ccbb604e69c",
+      "name": "Get owner email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_ME",
+          "name": "FindIt Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Config').first().json.fromEmail }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ 'Your device \"' + $('Check gap').first().json.deviceName + '\" is back online' }}",
+        "emailFormat": "text",
+        "text": "=Hi,\n\nYour device \"{{ $('Check gap').first().json.deviceName }}\" reported in again after about {{ $('Check gap').first().json.gapText }} offline, and Lost Mode is on.\n\nOpen FindIt to see its latest authorized location:\n{{ $('Config').first().json.siteUrl }}/dashboard/devices/{{ $('Check gap').first().json.deviceId }}\n\nYou are receiving this because you turned on Lost Mode for this device.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e722c1ad-aa6d-40bb-9b05-828fd687afa7",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        -80
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_ME",
+          "name": "FindIt SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get device",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get device": {
+      "main": [
+        [
+          {
+            "node": "Lost Mode on?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lost Mode on?": {
+      "main": [
+        [
+          {
+            "node": "Get previous event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get previous event": {
+      "main": [
+        [
+          {
+            "node": "Check gap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check gap": {
+      "main": [
+        [
+          {
+            "node": "Get owner email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get owner email": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
