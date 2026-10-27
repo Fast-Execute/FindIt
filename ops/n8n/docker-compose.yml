@@ -1,0 +1,27 @@
+# Self-hosted n8n for FindIt's internal notification workflows.
+# See ops/n8n/README.md. Copy .env.example to .env next to this file first.
+services:
+  n8n:
+    # Pin to a specific version tag once you have one running, so upgrades are deliberate.
+    image: docker.n8n.io/n8nio/n8n:stable
+    restart: unless-stopped
+    ports:
+      # Loopback only: put a TLS reverse proxy (Caddy, nginx, Cloudflare Tunnel) in front.
+      - "127.0.0.1:5678:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:?set N8N_HOST in .env}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://${N8N_HOST}/
+      # Encrypts stored credentials. Keep a copy somewhere safe: without it, a restored
+      # backup cannot decrypt the SMTP and Supabase credentials.
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+      # One reverse proxy in front of n8n.
+      N8N_PROXY_HOPS: "1"
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${GENERIC_TIMEZONE:-UTC}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

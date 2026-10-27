@@ -1,0 +1,176 @@
+{
+  "name": "FindIt - billing notices",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "findit/subscription-change",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "09122e7a-2613-4e38-9a0d-69cd2ee1a24a",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "9d67b919-e73c-40ff-af28-e9e9c2d19ea3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "FindIt webhook secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5c7ee116-57f7-45df-9dbf-d2433ed1a550",
+              "name": "siteUrl",
+              "value": "https://YOUR-FINDIT-SITE",
+              "type": "string"
+            },
+            {
+              "id": "681c3ad3-272e-4548-800a-724939f0100b",
+              "name": "supabaseUrl",
+              "value": "https://YOUR-PROJECT.supabase.co",
+              "type": "string"
+            },
+            {
+              "id": "c400155a-3eb2-4ee3-a1e9-714c534f55d3",
+              "name": "fromEmail",
+              "value": "FindIt <alerts@your-domain.example>",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b171c1dc-e685-4cf9-a00f-c73a6a9f0969",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fires on every subscriptions INSERT/UPDATE. Only a few transitions deserve an email.\nconst body = $('Webhook').first().json.body ?? {};\nconst config = $('Config').first().json;\nconst next = body.record ?? {};\nconst prev = body.old_record ?? {};\nconst names = { BASIC: 'Basic', PLUS: 'Plus', FAMILY: 'Family' };\nconst plan = names[next.plan] ?? next.plan ?? 'your plan';\nconst settingsUrl = String(config.siteUrl).replace(/\\/+$/, '') + '/dashboard/settings';\n\nlet subject;\nlet text;\n\nif (next.status === 'ACTIVE' && prev.status !== 'ACTIVE') {\n  subject = 'Your FindIt subscription is active';\n  text = `Hi,\\n\\nYour FindIt ${plan} subscription is active. You can manage it any time here:\\n${settingsUrl}`;\n} else if (next.status === 'PAST_DUE' && prev.status !== 'PAST_DUE') {\n  subject = 'Action needed: your FindIt payment failed';\n  text = `Hi,\\n\\nWe could not process your latest FindIt payment. Please update your payment method so your subscription stays active:\\n${settingsUrl}`;\n} else if (next.status === 'CANCELED' && prev.status !== 'CANCELED') {\n  subject = 'Your FindIt subscription has ended';\n  text = `Hi,\\n\\nYour FindIt subscription has ended. You can start a new one whenever you like:\\n${settingsUrl}`;\n} else if (next.status === 'ACTIVE' && next.cancel_at_period_end === true && prev.cancel_at_period_end !== true) {\n  const ends = next.current_period_end ? new Date(next.current_period_end).toDateString() : 'the end of your billing period';\n  subject = 'Your FindIt subscription will end soon';\n  text = `Hi,\\n\\nYour FindIt subscription is set to end on ${ends}. If that was a mistake you can undo it here:\\n${settingsUrl}`;\n} else {\n  return [];\n}\n\nreturn [{ json: { ownerId: next.owner_id, subject, text } }];"
+      },
+      "id": "ff73b72b-711e-4ba9-830f-6c943285027c",
+      "name": "Classify change",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Config').first().json.supabaseUrl }}/auth/v1/admin/users/{{ $json.ownerId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "bb1324e8-b74b-4956-b3b9-c3d09c21a1c9",
+      "name": "Get owner email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_ME",
+          "name": "FindIt Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Config').first().json.fromEmail }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $('Classify change').first().json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $('Classify change').first().json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "64b08b28-1fb2-4349-8715-5dbd77b79836",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_ME",
+          "name": "FindIt SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Classify change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify change": {
+      "main": [
+        [
+          {
+            "node": "Get owner email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get owner email": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
