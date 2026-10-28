@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "../logo";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -40,7 +41,7 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen px-6 py-10">
       <div className="mx-auto max-w-md">
-        <Link href="/" className="text-xl font-black"><span className="text-[var(--accent)]">Find</span>It</Link>
+        <Logo className="text-xl font-black" />
         <div className="mt-16 rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-7">
           <p className="text-sm font-bold uppercase tracking-[.2em] text-[var(--accent)]">Get protected</p>
           <h1 className="mt-3 text-3xl font-black">Create your account.</h1>
