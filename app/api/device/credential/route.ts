@@ -50,19 +50,37 @@ export async function POST(request: Request) {
   }
 
   const token = randomBytes(32).toString("base64url");
-  const { error } = await admin.from("device_credentials").insert({
-    device_id: deviceId,
-    token_hash: hashToken(token),
-  });
+  const { data: created, error } = await admin
+    .from("device_credentials")
+    .insert({
+      device_id: deviceId,
+      token_hash: hashToken(token),
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !created) {
     return NextResponse.json({ error: "Could not create device credential." }, { status: 500 });
+  }
+
+  // Revoke every other active credential for this device so only the newest token works.
+  const { error: revokeError } = await admin
+    .from("device_credentials")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("device_id", deviceId)
+    .neq("id", created.id)
+    .is("revoked_at", null);
+
+  if (revokeError) {
+    // Do not hand out a token while older ones may still be valid.
+    await admin.from("device_credentials").delete().eq("id", created.id);
+    return NextResponse.json({ error: "Could not rotate device credentials." }, { status: 500 });
   }
 
   return NextResponse.json({
     ok: true,
     device_id: deviceId,
     token,
-    warning: "Store this token securely. It is shown only once.",
+    warning: "Store this token securely. It is shown only once. Previous tokens for this device were revoked.",
   });
 }
