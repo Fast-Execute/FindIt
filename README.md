@@ -59,7 +59,7 @@ Set these variables locally in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, `0005_lost_mode_alerts_and_plans.sql`, `0006_payfast_billing.sql`, and `0007_email_notifications.sql`.
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, `0003_secure_device_ingestion.sql`, `0004_device_credentials.sql`, `0005_lost_mode_alerts_and_plans.sql`, `0006_payfast_billing.sql`, `0007_email_notifications.sql`, and `0008_admin_console.sql`.
 
 Device credentials are random tokens stored only as SHA-256 hashes in `device_credentials`. Each device has at most one active credential; issuing a new one through `POST /api/device/credential` revokes the previous one. Location ingestion (`POST /api/device/location`) authenticates with `Authorization: Bearer <token>` and requires `SUPABASE_SERVICE_ROLE_KEY` on the server.
 
@@ -124,3 +124,21 @@ Set up:
 3. If email was misconfigured for a while, rows stop retrying after 5 attempts. After fixing it, requeue them with `update email_outbox set attempts = 0 where sent_at is null;`.
 
 Until both variables are set nothing is sent and nothing is lost: mail stays queued.
+
+
+## Admin console
+
+A read-only page at `/admin` for the owner: accounts, subscribers, monthly recurring revenue, payments collected, device counts, and email delivery problems. It never shows device locations.
+
+**Opening it:** tap the **F** in the FindIt logo 7 times in a quick run (landing page, login, signup and the dashboard all have it). That is only a shortcut. The real lock is on the server: `/admin` returns a plain 404 to anyone who is not signed in as an admin, and the database itself refuses every admin query from a non-admin (`is_admin()` in migration 0008), so knowing the trick gets nobody in.
+
+**Making yourself an admin** (once, in the Supabase SQL editor; nobody can do this from the app):
+
+```sql
+insert into public.admin_users (user_id)
+select id from auth.users where email = 'you@example.com';
+```
+
+To remove an admin, delete their row; access ends immediately.
+
+Keep this list short and use a strong, unique password on admin accounts. Admins can see customer email addresses and payment amounts. Requiring two-factor sign-in for admins is a sensible next step but is not built yet.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SignOutButton from "./sign-out-button";
+import Logo from "../logo";
 import { createClient } from "@/lib/supabase/server";
 import { planLabel, type PlanStatus } from "@/lib/plans";
 
@@ -18,7 +19,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[var(--panel)]/95 p-5 md:block">
-        <Link href="/" className="block px-3 py-3 text-xl font-black tracking-tight"><span className="text-[var(--accent)]">Find</span>It</Link>
+        <Logo className="block px-3 py-3 text-xl font-black tracking-tight" />
         <div className="mt-8 rounded-2xl border border-[var(--line)] bg-white/[.02] p-4">
           <div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Account</div>
           <div className="mt-2 font-semibold">Personal recovery</div>

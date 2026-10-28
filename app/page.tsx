@@ -1,4 +1,5 @@
 import { PAID_PLANS, PLAN_CATALOG, PLAN_PRICES_ZAR, formatZar } from "@/lib/pricing";
+import Logo from "./logo";
 
 const plans = PAID_PLANS.map((key) => ({ key, ...PLAN_CATALOG[key], price: formatZar(PLAN_PRICES_ZAR[key]) }));
 
@@ -6,9 +7,7 @@ export default function Home() {
   return (
     <main>
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-        <a href="/" className="text-xl font-black tracking-tight">
-          <span className="text-[var(--accent)]">Find</span>It
-        </a>
+        <Logo className="text-xl font-black tracking-tight" />
         <div className="hidden gap-8 text-sm text-[var(--muted)] md:flex">
           <a href="#how-it-works" className="hover:text-white">How it works</a>
           <a href="#features" className="hover:text-white">Features</a>
