@@ -1,12 +1,12 @@
 # FindIt
 
-**Overall progress (7-phase roadmap): 38%**
+**Overall progress (roadmap): 30%** (13 of 44 tasks)
 
 ```
-[██████████████░░░░░░░░░░░░░░░░░░░░░░░░] 38%
+[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 30%
 ```
 
-See [PROGRESS.md](PROGRESS.md) for the full checklist.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the full task checklist and [PROGRESS.md](PROGRESS.md) for what is next.
 
 FindIt is a consent-based device recovery platform designed to help people locate and protect their own enrolled devices.
 

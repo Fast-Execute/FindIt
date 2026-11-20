@@ -1,29 +1,63 @@
 # FindIt Roadmap
 
-## Phase 1 — Foundation
+How to use this file: when a task is finished and verified, change `- [ ] Task` to `- [x] ~~Task~~`
+(checked and struck through), then run `node scripts/update-progress.mjs`. That recalculates the
+progress bar in `README.md` and rewrites `PROGRESS.md`. Progress = finished tasks / total tasks.
 
-Build the public website shell, navigation, trust messaging, authentication entry points, pricing presentation, and product documentation.
+## Phase 1 — Foundation
+- [x] ~~Repository, product safety and consent model~~
+- [x] ~~Core location states (live, last known, offline, reconnect)~~
+- [x] ~~Next.js web scaffold~~
+- [x] ~~Landing page, navigation and pricing presentation~~
+- [x] ~~CI workflow (type-check and build)~~
+- [x] ~~Product documentation (docs/PRODUCT.md)~~
 
 ## Phase 2 — Accounts
-
-Add user registration, login, session management, profile settings, and secure device enrollment.
+- [x] ~~Supabase authentication (signup, login, cookie sessions)~~
+- [x] ~~Protected dashboard routing~~
+- [x] ~~Device enrollment flow and device detail page~~
+- [ ] Real Settings page (profile name and email from the account, not placeholders)
+- [ ] Password reset flow
+- [ ] Email verification flow
 
 ## Phase 3 — Subscriptions
-
-Add monthly billing, subscription status, plan limits, checkout, cancellation, and billing history.
+- [x] ~~Subscription data model~~
+- [ ] Replace placeholder subscription UI (dashboard, sidebar) with real data
+- [ ] Choose billing provider and implement checkout
+- [ ] Billing webhooks keep subscription status in sync
+- [ ] Cancellation
+- [ ] Billing history
+- [ ] Plan limits enforced (device slots)
 
 ## Phase 4 — Device Recovery
-
-Add device records, authorized location events, last-known location, map dashboard, battery/network metadata, lost mode, and reconnect alerts.
+- [x] ~~Device records and location dashboard UI~~
+- [x] ~~Secure device location ingestion~~
+- [x] ~~Device token lifecycle: expiry, rotation, revocation~~
+- [ ] Map provider on the recovery map
+- [ ] Location history view per device
+- [ ] Stale-device detection (mark ONLINE devices OFFLINE when they stop reporting)
+- [ ] Rate limiting on the location ingestion endpoint
+- [ ] Lost mode
+- [ ] Reconnect alerts (notify when an enrolled device is reachable again)
 
 ## Phase 5 — Mobile Companion
-
-Build the authorized device component that can report location according to platform permissions and battery/background constraints.
+- [ ] Android companion: permissions, secure token storage, location reporting
+- [ ] iOS companion: permissions, secure token storage, location reporting
+- [ ] Background reporting that respects battery and OS limits
+- [ ] In-app device token provisioning from the dashboard
 
 ## Phase 6 — Offline Finding Integrations
-
-Evaluate legitimate OS/vendor offline-finding capabilities and integrate only supported, consent-based mechanisms.
+- [ ] Evaluate legitimate OS and vendor offline-finding mechanisms
+- [ ] Integrate only supported, consent-based mechanisms
 
 ## Phase 7 — Production
-
-Security review, privacy/legal review, monitoring, backups, abuse prevention, billing verification, deployment, and operational runbooks.
+- [ ] Automated tests for API routes and database functions
+- [ ] CI: pin dependency versions and add lint
+- [ ] Document SUPABASE_SERVICE_ROLE_KEY in .env.example
+- [ ] Security review
+- [ ] Privacy and legal review
+- [ ] Monitoring and error reporting
+- [ ] Backups and restore test
+- [ ] Abuse prevention
+- [ ] Production deployment
+- [ ] Operational runbooks
