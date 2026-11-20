@@ -17,8 +17,8 @@ progress bar in `README.md` and rewrites `PROGRESS.md`. Progress = finished task
 - [x] ~~Protected dashboard routing~~
 - [x] ~~Device enrollment flow and device detail page~~
 - [x] ~~Real Settings page (profile name and email from the account, not placeholders)~~
-- [ ] Password reset flow
-- [ ] Email verification flow
+- [x] ~~Password reset flow~~
+- [x] ~~Email verification flow~~
 
 ## Phase 3 — Subscriptions
 - [x] ~~Subscription data model~~

@@ -10,6 +10,17 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+
+  async function resendConfirmation() {
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: window.location.origin + "/auth/callback?next=/dashboard" },
+    });
+    setMessage(error ? "Could not resend right now. Please wait a minute and try again." : "Confirmation email sent again. Check your inbox.");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,6 +45,7 @@ export default function SignupPage() {
       return;
     }
     setMessage("Account created. Check your email to confirm your address, then sign in.");
+    setAwaitingConfirmation(true);
     setLoading(false);
   }
 
@@ -52,6 +64,7 @@ export default function SignupPage() {
             <button disabled={loading} className="w-full rounded-2xl bg-[var(--accent)] px-5 py-3.5 font-bold text-[#06100b] disabled:opacity-60">{loading ? "Creating..." : "Create account"}</button>
           </form>
           {message && <p className="mt-4 rounded-2xl border border-[var(--line)] bg-white/[.03] p-4 text-sm text-[var(--muted)]">{message}</p>}
+          {awaitingConfirmation && <button type="button" onClick={resendConfirmation} className="mt-3 w-full rounded-2xl border border-[var(--line)] px-5 py-3 text-sm font-bold hover:border-[var(--accent)]">Resend confirmation email</button>}
           <p className="mt-6 text-center text-sm text-[var(--muted)]">Already have an account? <Link href="/login" className="font-bold text-white hover:text-[var(--accent)]">Sign in</Link></p>
         </div>
       </div>
