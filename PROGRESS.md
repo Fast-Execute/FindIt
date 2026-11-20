@@ -1,9 +1,9 @@
 # FindIt — Build Progress
 
-**Overall progress (7-phase roadmap): 35%**
+**Overall progress (7-phase roadmap): 38%**
 
 ```
-[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 35%
+[██████████████░░░░░░░░░░░░░░░░░░░░░░░░] 38%
 ```
 
 
@@ -16,9 +16,9 @@
 - [x] Secure device location ingestion foundation
 - [x] One-time device credential shown during enrollment
 - [x] CI workflow
+- [x] Device token lifecycle: expiry, rotation, revocation, and credential-based ingestion (migration 0004)
 
 ## Remaining
-- [ ] Device token lifecycle and rotation
 - [ ] Subscription billing: checkout, cancellation, billing history, plan limits
 - [ ] Lost mode and reconnect alerts
 - [ ] Native mobile companion (Phase 5)
@@ -26,4 +26,4 @@
 - [ ] Security and privacy/legal review, monitoring, backups, abuse prevention
 - [ ] Production deployment and operational runbooks
 
-_Estimate across the 7 phases in docs/ROADMAP.md as of 2026-11-14. The README's 'Phase 1 — Foundation: 75%' checklist is kept as is. Update this file as milestones are completed and verified._
+_Estimate across the 7 phases in docs/ROADMAP.md as of 2026-11-20. The README's 'Phase 1 — Foundation: 75%' checklist is kept as is. Update this file as milestones are completed and verified._

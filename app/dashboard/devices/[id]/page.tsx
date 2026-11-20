@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { CredentialControls } from "./credential-controls";
 
 export default async function DevicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -57,6 +58,7 @@ export default async function DevicePage({ params }: { params: Promise<{ id: str
               <div className="mt-2 font-mono text-lg font-black tracking-[.15em]">{device.enrollment_code ?? "Pending"}</div>
             </div>
           </article>
+          <CredentialControls deviceId={device.id} />
           <article className="rounded-3xl border border-[var(--line)] bg-[var(--panel)] p-6">
             <h2 className="text-xl font-black">Recovery controls</h2>
             <div className="mt-4 grid gap-3">
