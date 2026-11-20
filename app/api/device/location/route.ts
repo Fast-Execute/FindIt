@@ -64,8 +64,15 @@ export async function POST(request: Request) {
   }
 
   const recordedAt = typeof body.recorded_at === "string" ? body.recorded_at : new Date().toISOString();
-  if (Number.isNaN(Date.parse(recordedAt))) {
+  const recordedMs = Date.parse(recordedAt);
+  if (Number.isNaN(recordedMs)) {
     return NextResponse.json({ error: "Invalid recorded_at timestamp." }, { status: 400 });
+  }
+
+  // Allow a little clock drift, but reject timestamps far in the future: they would make
+  // a device look recently seen for as long as the timestamp lasts.
+  if (recordedMs > Date.now() + 5 * 60 * 1000) {
+    return NextResponse.json({ error: "recorded_at is too far in the future." }, { status: 400 });
   }
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -85,7 +92,20 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    return NextResponse.json({ error: "Device enrollment could not be verified." }, { status: 401 });
+    // Error codes come from public.ingest_device_location (migration 0005).
+    if (error.code === "FI429") {
+      return NextResponse.json(
+        { error: "Reporting too fast. Wait a few seconds between reports." },
+        { status: 429, headers: { "Retry-After": "5" } },
+      );
+    }
+    if (error.code === "FI400") {
+      return NextResponse.json({ error: "Invalid location report." }, { status: 400 });
+    }
+    if (error.code === "FI401") {
+      return NextResponse.json({ error: "Device credential is invalid, revoked or expired." }, { status: 401 });
+    }
+    return NextResponse.json({ error: "Could not record the location report." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, event_id: data?.id ?? null });

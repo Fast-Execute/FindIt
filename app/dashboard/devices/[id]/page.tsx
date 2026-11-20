@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CredentialControls } from "./credential-controls";
+import { effectiveStatus } from "@/lib/device-status";
 
 export default async function DevicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -29,7 +30,7 @@ export default async function DevicePage({ params }: { params: Promise<{ id: str
             <h1 className="mt-3 text-4xl font-black tracking-tight">{device.name}</h1>
             <p className="mt-2 text-[var(--muted)]">{device.model}</p>
           </div>
-          <span className="w-fit rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-2 text-xs font-black text-yellow-300">{device.status}</span>
+          <span className="w-fit rounded-full border border-yellow-400/20 bg-yellow-400/10 px-4 py-2 text-xs font-black text-yellow-300">{effectiveStatus(device.status, device.last_seen_at)}</span>
         </div>
       </section>
 

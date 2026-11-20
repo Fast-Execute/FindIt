@@ -35,8 +35,8 @@ progress bar in `README.md` and rewrites `PROGRESS.md`. Progress = finished task
 - [x] ~~Device token lifecycle: expiry, rotation, revocation~~
 - [ ] Map provider on the recovery map
 - [ ] Location history view per device
-- [ ] Stale-device detection (mark ONLINE devices OFFLINE when they stop reporting)
-- [ ] Rate limiting on the location ingestion endpoint
+- [x] ~~Stale-device detection (mark ONLINE devices OFFLINE when they stop reporting)~~
+- [x] ~~Rate limiting on the location ingestion endpoint~~
 - [ ] Lost mode
 - [ ] Reconnect alerts (notify when an enrolled device is reachable again)
 
@@ -53,7 +53,7 @@ progress bar in `README.md` and rewrites `PROGRESS.md`. Progress = finished task
 ## Phase 7 — Production
 - [ ] Automated tests for API routes and database functions
 - [ ] CI: pin dependency versions and add lint
-- [ ] Document SUPABASE_SERVICE_ROLE_KEY in .env.example
+- [x] ~~Document SUPABASE_SERVICE_ROLE_KEY in .env.example~~
 - [ ] Security review
 - [ ] Privacy and legal review
 - [ ] Monitoring and error reporting

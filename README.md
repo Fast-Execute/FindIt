@@ -1,9 +1,9 @@
 # FindIt
 
-**Overall progress (roadmap): 39%** (17 of 44 tasks)
+**Overall progress (roadmap): 45%** (20 of 44 tasks)
 
 ```
-[███████████████░░░░░░░░░░░░░░░░░░░░░░░] 39%
+[█████████████████░░░░░░░░░░░░░░░░░░░░░] 45%
 ```
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the full task checklist and [PROGRESS.md](PROGRESS.md) for what is next.
@@ -58,11 +58,15 @@ The application scaffold will be added in the next implementation step.
 
 The project now includes cookie-based Supabase Auth, protected dashboard routing, and the initial Postgres schema for devices, location events, and subscriptions.
 
-Set these variables locally in `.env.local`:
+Set these variables locally in `.env.local` (see `.env.example`):
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only)
+- `CRON_SECRET`
 
-The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`, and `0004_device_token_lifecycle.sql`.
+Schedule a request every 5 minutes to `/api/cron/stale-devices` with the header `Authorization: Bearer <CRON_SECRET>`. It saves OFFLINE for devices that stopped reporting. The dashboard already shows such devices as OFFLINE without it; the job keeps the stored status accurate.
+
+The database migrations are in `supabase/migrations/0001_initial.sql`, `0002_device_enrollment.sql`, and `0003_secure_device_ingestion.sql`, `0004_device_token_lifecycle.sql`, and `0005_stale_devices_and_rate_limit.sql`.
 
 Real device location collection is implemented as a secured ingestion foundation for an explicitly authorized companion/device component. The website remains the recovery dashboard and account layer. Production device credentials should be minted and rotated by the enrollment service before native companion rollout.

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS, describeSubscription, formatDateTime, getAccountSummary } from "@/lib/account";
+import { effectiveStatus } from "@/lib/device-status";
 
 type DeviceRow = {
   id: string;
@@ -49,6 +50,7 @@ export default async function DashboardPage() {
   const events = (eventData ?? []) as EventRow[];
   const deviceNames = new Map(devices.map((d) => [d.id, d.name]));
   const device = devices[0] ?? null;
+  const deviceStatus = device ? effectiveStatus(device.status, device.last_seen_at) : "";
 
   const plan = describeSubscription(account.subscription);
   const active = account.subscription?.status === "ACTIVE";
@@ -75,7 +77,7 @@ export default async function DashboardPage() {
                   <div className="text-sm text-[var(--muted)]">{device.model}</div>
                   <h2 className="mt-1 text-2xl font-black">{device.name}</h2>
                 </div>
-                <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-black ${device.status === "ONLINE" ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-yellow-400/10 text-yellow-300"}`}>{device.status}</span>
+                <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-black ${deviceStatus === "ONLINE" ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-yellow-400/10 text-yellow-300"}`}>{deviceStatus}</span>
               </div>
               <div className="grid gap-5 py-6 sm:grid-cols-3">
                 <Metric label="Last seen" value={formatDateTime(device.last_seen_at)} note="Last report from the device" />
