@@ -16,13 +16,13 @@ progress bar in `README.md` and rewrites `PROGRESS.md`. Progress = finished task
 - [x] ~~Supabase authentication (signup, login, cookie sessions)~~
 - [x] ~~Protected dashboard routing~~
 - [x] ~~Device enrollment flow and device detail page~~
-- [ ] Real Settings page (profile name and email from the account, not placeholders)
+- [x] ~~Real Settings page (profile name and email from the account, not placeholders)~~
 - [ ] Password reset flow
 - [ ] Email verification flow
 
 ## Phase 3 — Subscriptions
 - [x] ~~Subscription data model~~
-- [ ] Replace placeholder subscription UI (dashboard, sidebar) with real data
+- [x] ~~Replace placeholder subscription UI (dashboard, sidebar) with real data~~
 - [ ] Choose billing provider and implement checkout
 - [ ] Billing webhooks keep subscription status in sync
 - [ ] Cancellation

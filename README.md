@@ -1,9 +1,9 @@
 # FindIt
 
-**Overall progress (roadmap): 30%** (13 of 44 tasks)
+**Overall progress (roadmap): 34%** (15 of 44 tasks)
 
 ```
-[███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░] 30%
+[█████████████░░░░░░░░░░░░░░░░░░░░░░░░░] 34%
 ```
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the full task checklist and [PROGRESS.md](PROGRESS.md) for what is next.

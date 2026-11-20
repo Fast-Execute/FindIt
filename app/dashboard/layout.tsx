@@ -1,5 +1,7 @@
 import Link from "next/link";
 import SignOutButton from "./sign-out-button";
+import { createClient } from "@/lib/supabase/server";
+import { describeSubscription, getAccountSummary } from "@/lib/account";
 
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: "⌂" },
@@ -7,15 +9,18 @@ const navigation = [
   { href: "/dashboard/settings", label: "Settings", icon: "⚙" },
 ];
 
-export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const account = await getAccountSummary(await createClient());
+  const plan = describeSubscription(account?.subscription ?? null);
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-[var(--line)] bg-[var(--panel)]/95 p-5 md:block">
         <Link href="/" className="block px-3 py-3 text-xl font-black tracking-tight"><span className="text-[var(--accent)]">Find</span>It</Link>
         <div className="mt-8 rounded-2xl border border-[var(--line)] bg-white/[.02] p-4">
           <div className="text-xs font-bold uppercase tracking-[.16em] text-[var(--muted)]">Account</div>
-          <div className="mt-2 font-semibold">Personal recovery</div>
-          <div className="mt-1 text-xs text-[var(--muted)]">Subscription active</div>
+          <div className="mt-2 truncate font-semibold">{account?.name || account?.email || "Your account"}</div>
+          <div className="mt-1 text-xs text-[var(--muted)]">{plan.badge === "NONE" ? plan.headline : `${plan.headline} plan · ${plan.badge.toLowerCase().replace("_", " ")}`}</div>
         </div>
         <nav className="mt-6 space-y-1">
           {navigation.map((item) => (
